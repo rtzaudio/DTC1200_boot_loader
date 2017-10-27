@@ -46,6 +46,89 @@
 #include "boot_loader/bl_crc32.h"
 #endif
 
+#define DAC_MAX			0x03FF      /* 10-bit full scale DAC   */
+
+//*****************************************************************************
+//
+// Writes data out the SPI port in master mode
+//
+//*****************************************************************************
+
+void SPISend16(unsigned ui16Data)
+{
+    //
+    // Wait until there is space in the SSI FIFO.
+    //
+    while(!(HWREG(SSIx_BASE + SSI_O_SR) & SSI_SR_TNF))
+    {
+    }
+
+    //
+    // Write the 16 bit word to the SSI port.
+    //
+    HWREG(SSIx_BASE + SSI_O_DR) = ui16Data;
+
+    //
+    // Empty the receive FIFO.
+    //
+    while(HWREG(SSIx_BASE + SSI_O_SR) & SSI_SR_RNE)
+    {
+        HWREG(SSIx_BASE + SSI_O_DR);
+    }
+}
+
+//*****************************************************************************
+// This function writes the takeup and supply motor DAC values controlling
+// the motor drive amp. The TLV5637 is a dual 10-bit, single supply DAC,
+// based on a resistor string architecture. The output voltage (full scale
+// determined by reference) is given by:
+//
+//      Vout = (2 REF) * (CODE/0x1000)
+//
+// Where REF is the reference voltage and CODE is the digital
+// input value in the range 0x000 to 0xFFF. Because it is a
+// 10-bit DAC, only D11 to D2 are used. D0 and D1 are ignored.
+// A power-on reset initially puts the internal latches to a
+// defined state (all bits zero).
+//
+// The motor current amp delivers full torque at 1mA and
+// zero torque at 5.1mA.
+//
+//      DAC A - is the SUPPLY motor torque level
+//      DAC B - is the TAKEUP motor torque level
+//
+//*****************************************************************************
+
+void MotorDAC_write(unsigned supply, unsigned takeup)
+{
+	unsigned ulWord;
+	unsigned ulDac;
+
+	takeup = DAC_MAX - takeup;
+	supply = DAC_MAX - supply;
+
+	/* (1) Set reference voltage to 1.024 V (CONTROL register) */
+
+	ulWord = (1 << 15) | (1 << 12) | 0x01;
+	//GPIO_write(Board_CS_SPI0, PIN_LOW);
+	SPISend16(ulWord);
+	//GPIO_write(Board_CS_SPI0, PIN_HIGH);
+
+	/* (2) Write data for DAC B to BUFFER */
+	ulDac  = (takeup & 0x3FF) << 2;
+	ulWord = (1 << 12) | (uint16_t)ulDac;
+	//GPIO_write(Board_CS_SPI0, PIN_LOW);
+	SPISend16(ulWord);
+	//GPIO_write(Board_CS_SPI0, PIN_HIGH);
+
+	/* (3) Write DAC A value and update DAC A & B simultaneously */
+	ulDac  = (supply & 0x3FF) << 2;
+	ulWord = (1 << 15) | (uint16_t)ulDac;
+	//GPIO_write(Board_CS_SPI0, PIN_LOW);
+	SPISend16(ulWord);
+	//GPIO_write(Board_CS_SPI0, PIN_HIGH);
+}
+
 //*****************************************************************************
 //
 // Performs application-specific low level hardware initialization on system
@@ -64,6 +147,7 @@
 
 void MyHwInitFunc(void)
 {
+
 }
 
 //*****************************************************************************
@@ -80,7 +164,55 @@ void MyHwInitFunc(void)
 
 void MyInitFunc(void)
 {
+#if 0
+    //
+    // Enable the clocks to the SSI and GPIO modules.
+    //
+    HWREG(SYSCTL_RCGCGPIO) |= (SSI_CLKPIN_CLOCK_ENABLE |
+                               SSI_FSSPIN_CLOCK_ENABLE |
+                               /*SSI_MISOPIN_CLOCK_ENABLE |*/
+                               SSI_MOSIPIN_CLOCK_ENABLE);
+    HWREG(SYSCTL_RCGCSSI) |= SSI_CLOCK_ENABLE;
 
+    //
+    // Make the pin be peripheral controlled.
+    //
+    HWREG(SSI_CLKPIN_BASE + GPIO_O_AFSEL) |= SSI_CLK;
+    HWREG(SSI_CLKPIN_BASE + GPIO_O_PCTL) |= SSI_CLK_PCTL;
+    HWREG(SSI_CLKPIN_BASE + GPIO_O_DEN) |= SSI_CLK;
+    HWREG(SSI_CLKPIN_BASE + GPIO_O_ODR) &= ~(SSI_CLK);
+
+    HWREG(SSI_FSSPIN_BASE + GPIO_O_AFSEL) |= SSI_CS;
+    HWREG(SSI_FSSPIN_BASE + GPIO_O_PCTL) |= SSI_CS_PCTL;
+    HWREG(SSI_FSSPIN_BASE + GPIO_O_DEN) |= SSI_CS;
+    HWREG(SSI_FSSPIN_BASE + GPIO_O_ODR) &= ~(SSI_CS);
+
+    HWREG(SSI_MISOPIN_BASE + GPIO_O_AFSEL) |= SSI_TX;
+    HWREG(SSI_MISOPIN_BASE + GPIO_O_PCTL) |= SSI_TX_PCTL;
+    HWREG(SSI_MISOPIN_BASE + GPIO_O_DEN) |= SSI_TX;
+    HWREG(SSI_MISOPIN_BASE + GPIO_O_ODR) &= ~(SSI_TX);
+
+    //HWREG(SSI_MOSIPIN_BASE + GPIO_O_AFSEL) |= SSI_RX;
+    //HWREG(SSI_MOSIPIN_BASE + GPIO_O_PCTL) |= SSI_RX_PCTL;
+    //HWREG(SSI_MOSIPIN_BASE + GPIO_O_DEN) |= SSI_RX;
+    //HWREG(SSI_MOSIPIN_BASE + GPIO_O_ODR) &= ~(SSI_RX);
+
+    //
+    // Set the SSI protocol to Motorola POL=1, PHA=0, 16-bit
+    //
+    HWREG(SSIx_BASE + SSI_O_CR0) = (SSI_CR0_SPO | SSI_CR0_DSS_16);
+
+    //
+    // Enable the SSI interface in master mode.
+    //
+    HWREG(SSIx_BASE + SSI_O_CR1) = SSI_CR1_SSE;
+
+	//
+	// Now set the reel motors to have zero torque while booting!
+	//
+	MotorDAC_write(0, 0);
+
+#endif
 }
 
 //*****************************************************************************
