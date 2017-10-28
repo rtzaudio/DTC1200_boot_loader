@@ -164,7 +164,7 @@ void MyHwInitFunc(void)
 
 void MyInitFunc(void)
 {
-#if 0
+#if 1
     //
     // Enable the clocks to the SSI and GPIO modules.
     //
