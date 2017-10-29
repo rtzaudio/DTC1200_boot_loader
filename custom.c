@@ -46,7 +46,7 @@
 #include "boot_loader/bl_crc32.h"
 #endif
 
-#define DAC_MAX			0x03FF      /* 10-bit full scale DAC   */
+#define DAC_MAX         0x03FF      /* 10-bit full scale DAC   */
 
 //*****************************************************************************
 //
@@ -101,32 +101,32 @@ void SPISend16(unsigned ui16Data)
 
 void MotorDAC_write(unsigned supply, unsigned takeup)
 {
-	unsigned ulWord;
-	unsigned ulDac;
+    unsigned ulWord;
+    unsigned ulDac;
 
-	takeup = DAC_MAX - takeup;
-	supply = DAC_MAX - supply;
+    takeup = DAC_MAX - takeup;
+    supply = DAC_MAX - supply;
 
-	/* (1) Set reference voltage to 1.024 V (CONTROL register) */
+    /* (1) Set reference voltage to 1.024 V (CONTROL register) */
 
-	ulWord = (1 << 15) | (1 << 12) | 0x01;
-	//GPIO_write(Board_CS_SPI0, PIN_LOW);
-	SPISend16(ulWord);
-	//GPIO_write(Board_CS_SPI0, PIN_HIGH);
+    ulWord = (1 << 15) | (1 << 12) | 0x01;
+    //GPIO_write(Board_CS_SPI0, PIN_LOW);
+    SPISend16(ulWord);
+    //GPIO_write(Board_CS_SPI0, PIN_HIGH);
 
-	/* (2) Write data for DAC B to BUFFER */
-	ulDac  = (takeup & 0x3FF) << 2;
-	ulWord = (1 << 12) | (uint16_t)ulDac;
-	//GPIO_write(Board_CS_SPI0, PIN_LOW);
-	SPISend16(ulWord);
-	//GPIO_write(Board_CS_SPI0, PIN_HIGH);
+    /* (2) Write data for DAC B to BUFFER */
+    ulDac  = (takeup & 0x3FF) << 2;
+    ulWord = (1 << 12) | (uint16_t)ulDac;
+    //GPIO_write(Board_CS_SPI0, PIN_LOW);
+    SPISend16(ulWord);
+    //GPIO_write(Board_CS_SPI0, PIN_HIGH);
 
-	/* (3) Write DAC A value and update DAC A & B simultaneously */
-	ulDac  = (supply & 0x3FF) << 2;
-	ulWord = (1 << 15) | (uint16_t)ulDac;
-	//GPIO_write(Board_CS_SPI0, PIN_LOW);
-	SPISend16(ulWord);
-	//GPIO_write(Board_CS_SPI0, PIN_HIGH);
+    /* (3) Write DAC A value and update DAC A & B simultaneously */
+    ulDac  = (supply & 0x3FF) << 2;
+    ulWord = (1 << 15) | (uint16_t)ulDac;
+    //GPIO_write(Board_CS_SPI0, PIN_LOW);
+    SPISend16(ulWord);
+    //GPIO_write(Board_CS_SPI0, PIN_HIGH);
 }
 
 //*****************************************************************************
@@ -207,10 +207,10 @@ void MyInitFunc(void)
     //
     HWREG(SSIx_BASE + SSI_O_CR1) = SSI_CR1_SSE;
 
-	//
-	// Now set the reel motors to have zero torque while booting!
-	//
-	MotorDAC_write(0, 0);
+    //
+    // Now set the reel motors to have zero torque while booting!
+    //
+    MotorDAC_write(0, 0);
 
 #endif
 }
