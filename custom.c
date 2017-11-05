@@ -49,11 +49,15 @@
 #ifdef CHECK_CRC
 #include "boot_loader/bl_crc32.h"
 #endif
-#define DAC_MAX         0x03FF      /* 10-bit full scale DAC   */
+#include "custom.h"
 
+/* Static Function Prototypes */
 
 void MotorDAC_init(void);
-void MotorDAC_write(unsigned supply, unsigned takeup);
+void MotorDAC_write(uint32_t supply, uint32_t takeup);
+
+void MCP23S17_init(void);
+void MCP23S17_write(uint32_t uRegAddr, uint32_t uData);
 
 //*****************************************************************************
 //
@@ -73,7 +77,7 @@ void MotorDAC_write(unsigned supply, unsigned takeup);
 
 void MyHwInitFunc(void)
 {
-
+	//ROM_SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ | SYSCTL_OSC_MAIN);
 }
 
 //*****************************************************************************
@@ -90,13 +94,14 @@ void MyHwInitFunc(void)
 
 void MyInitFunc(void)
 {
-    //ROM_SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ | SYSCTL_OSC_MAIN);
-
     // Configure SPI-0 that drives the reel motor DAC's
 	MotorDAC_init();
 
 	// Set the motor DAC's to zero torque at power-up!
 	MotorDAC_write(0, 0);
+
+	// initialize SPI-2 and the I/O expander there
+	MCP23S17_init();
 }
 
 //*****************************************************************************
@@ -215,15 +220,7 @@ void MotorDAC_init(void)
 
 	ROM_SSIEnable(SSI0_BASE);
 
-	//
-	// Read any residual data from the SSI port.  This makes sure the receive
-	// FIFOs are empty, so we don't read any unwanted junk.  This is done here
-	// because the SPI SSI mode is full-duplex, which allows you to send and
-	// receive at the same time.  The SSIDataGetNonBlocking function returns
-	// "true" when data was returned, and "false" when no data was returned.
-	// The "non-blocking" function checks if there is any data in the receive
-	// FIFO and does not "hang" if there isn't.
-	//
+	// Read any residual data from the SSI port.
 
 	uint32_t ui32DataRx[4];
 
@@ -254,10 +251,10 @@ void MotorDAC_init(void)
 //
 //*****************************************************************************
 
-void MotorDAC_write(unsigned supply, unsigned takeup)
+void MotorDAC_write(uint32_t supply, uint32_t takeup)
 {
-    unsigned ulWord;
-    unsigned ulDac;
+    uint32_t ulWord;
+    uint32_t ulDac;
 
     takeup = DAC_MAX - takeup;
     supply = DAC_MAX - supply;
@@ -286,3 +283,123 @@ void MotorDAC_write(unsigned supply, unsigned takeup)
     //GPIOPinWrite(GPIO_PORTA_BASE, GPIO_PIN_3, GPIO_PIN_3);
 }
 
+//*****************************************************************************
+//
+// MCP23S17 I/O Expander
+//
+// U8 (SSI2) : MCP23S17SO SOLENOID, CONFIG DIP SWITCH & TAPE SPEED
+//
+//*****************************************************************************
+
+void MCP23S17_init(void)
+{
+	// We're controlling the slave select manually on PB5.
+	// Configure pin PB5 for standard GPIO use.
+
+	ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+
+	ROM_GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_5);
+
+	ROM_GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_5, GPIO_PIN_5);
+
+	// The SSI0 peripheral must be enabled for use.
+
+	ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI2);
+
+	// Configure the pin muxing for SSI0 functions on port A2, A3, A4, and A5.
+	// This step is not necessary if your part does not support pin muxing.
+
+	ROM_GPIOPinConfigure(GPIO_PB4_SSI2CLK);
+	//ROM_GPIOPinConfigure(GPIO_PB5_SSI2FSS);
+	ROM_GPIOPinConfigure(GPIO_PB6_SSI2RX);
+	ROM_GPIOPinConfigure(GPIO_PB7_SSI2TX);
+
+	// Configure the GPIO settings for the SSI pins.  This function also gives
+	// control of these pins to the SSI hardware.  Consult the data sheet to
+	// see which functions are allocated per pin.
+	// The pins are assigned as follows:
+	//      PB7 - SSI0Tx
+	//      PB6 - SSI0Rx
+	//      PB5 - SSI0Fss
+	//      PB4 - SSI2CLK
+
+	ROM_GPIOPinTypeSSI(GPIO_PORTB_BASE, GPIO_PIN_4 | /*GPIO_PIN_5 |*/
+			GPIO_PIN_6 | GPIO_PIN_7);
+
+	// Configure and enable the SSI port for SPI master mode.  Use SSI0,
+	// system clock supply, idle clock level low and active low clock in
+	// freescale SPI mode, master mode, 1MHz SSI frequency, and 8-bit data.
+	// For SPI mode, you can set the polarity of the SSI clock when the SSI
+	// unit is idle.  You can also configure what clock edge you want to
+	// capture data on.  Please reference the datasheet for more information on
+	// the different SPI modes.
+
+	ROM_SSIConfigSetExpClk(
+			SSI2_BASE,
+			ROM_SysCtlClockGet(),
+			SSI_FRF_MOTO_MODE_0,
+			SSI_MODE_MASTER,
+			1000000,
+			8);
+
+	// Enable the SSI0 module.
+
+	ROM_SSIEnable(SSI2_BASE);
+
+	// Read any residual data from the SSI port.
+
+	uint32_t ui32DataRx[4];
+	while(ROM_SSIDataGetNonBlocking(SSI2_BASE, &ui32DataRx[0]))
+	{
+	}
+
+	//
+	// Configure the I/O Expander
+	//
+	// U8 (SSI2) : MCP23S17SO SOLENOID, CONFIG DIP SWITCH & TAPE SPEED
+	//
+
+	// Configure for byte mode, INT active low
+	MCP23S17_write(MCP_IOCONA, C_SEQOP);
+
+	// Configure for byte mode, INT active low
+	MCP23S17_write(MCP_IOCONB, C_SEQOP | C_ODR);
+
+	// Port A - solenoid and other drivers, all outputs
+	MCP23S17_write(MCP_IODIRA, 0);
+
+	// Port B - DIP switches and tape-speed switch, all inputs
+	MCP23S17_write(MCP_IODIRB, 0xFF);
+
+	//Invert input polarity of DIP switches and tape-speed switch
+	MCP23S17_write(MCP_IOPOLB, 0x8F);
+
+	// Finally, engage the brakes
+	MCP23S17_write(MCP_GPIOA, T_BRAKE);
+}
+
+//*****************************************************************************
+// Set transport solenoids and/or record pulse/hold output drivers.
+// The following bitmasks are valid:
+//*****************************************************************************
+
+void MCP23S17_write(uint32_t uRegAddr, uint32_t uData)
+{
+	/* Select SPI chip select low PB5 */
+	ROM_GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_5, 0);
+
+	/* 1) Write the op-code */
+    ROM_SSIDataPut(SSI2_BASE, 0x40);
+    while(ROM_SSIBusy(SSI2_BASE));
+
+	/* 2) Write the register address */
+    ROM_SSIDataPut(SSI2_BASE, uRegAddr);
+    while(ROM_SSIBusy(SSI2_BASE));
+
+	/* 2) Write the register address */
+    ROM_SSIDataPut(SSI2_BASE, uData);
+    while(ROM_SSIBusy(SSI2_BASE));
+
+	/* Release SPI chip select high PB5 */
+    ROM_GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_5, GPIO_PIN_5);
+}
