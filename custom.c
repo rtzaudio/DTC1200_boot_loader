@@ -49,7 +49,6 @@
 #ifdef CHECK_CRC
 #include "boot_loader/bl_crc32.h"
 #endif
-#include "custom.h"
 
 /* Static Function Prototypes */
 

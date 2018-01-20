@@ -25,6 +25,8 @@
 #ifndef __BL_CONFIG_H__
 #define __BL_CONFIG_H__
 
+#include "custom.h"
+
 //*****************************************************************************
 // The DTC-1200 controller uses UART1 on PORT-C for the main RS-232 serial
 // port. Pin PC4 is configured for RX and pin PC5 is configured for TX.
@@ -255,7 +257,11 @@
 // Requries: None
 //
 //*****************************************************************************
-#define FORCED_UPDATE_PERIPH    SYSCTL_RCGCGPIO_R2
+#if (HW_REV >= 3)
+#define FORCED_UPDATE_PERIPH    SYSCTL_RCGCGPIO_R0		/* Port-A */
+#else
+#define FORCED_UPDATE_PERIPH    SYSCTL_RCGCGPIO_R2		/* Port-C */
+#endif
 
 //*****************************************************************************
 //
@@ -269,7 +275,12 @@
 // Requries: None
 //
 //*****************************************************************************
+#if (HW_REV >= 3)
+#define FORCED_UPDATE_PORT      GPIO_PORTA_BASE
+#else
 #define FORCED_UPDATE_PORT      GPIO_PORTC_BASE
+#endif
+
 
 //*****************************************************************************
 //
@@ -280,7 +291,12 @@
 // Requries: None
 //
 //*****************************************************************************
+
+#if (HW_REV >= 3)
+#define FORCED_UPDATE_PIN       4     // PA4
+#else
 #define FORCED_UPDATE_PIN       6     // PC6
+#endif
 
 //*****************************************************************************
 //
