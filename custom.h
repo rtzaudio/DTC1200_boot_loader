@@ -1,15 +1,13 @@
-/** ============================================================================
- *  @file       DTC1200.h
- *
- *  @brief      DTC1200 Board Specific APIs
- *
- *  The DTC1200 header file should be included in an application as follows:
- *  @code
- *  #include <DTC1200.h>
- *  @endcode
- *
- *  ============================================================================
- */
+//*****************************************************************************
+//
+// DTC-1200 Digital Transport Controller Boot Loader for Ampex MM-1200
+//
+// Copyright (C) 2016-2018, RTZ Professional Audio, LLC
+// All Rights Reserved
+//
+// RTZ is registered trademark of RTZ Professional Audio, LLC
+//
+//*****************************************************************************
 
 #ifndef __CUSTOM_H
 #define __CUSTOM_H

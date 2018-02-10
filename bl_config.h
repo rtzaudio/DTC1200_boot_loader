@@ -1397,7 +1397,7 @@
 // void MyStartFunc(void);
 //
 //*****************************************************************************
-//#define BL_START_FN_HOOK        MyStartFunc
+#define BL_START_FN_HOOK        MyStartFunc
 
 //*****************************************************************************
 //
@@ -1417,7 +1417,7 @@
 // - ulTotal indicates the number of bytes expected or 0 if this is not known.
 //
 //*****************************************************************************
-//#define BL_PROGRESS_FN_HOOK     MyProgressFunc
+#define BL_PROGRESS_FN_HOOK     MyProgressFunc
 
 //*****************************************************************************
 //
@@ -1431,7 +1431,7 @@
 // void MyEndFunc(void);
 //
 //*****************************************************************************
-//#define BL_END_FN_HOOK          MyEndFunc
+#define BL_END_FN_HOOK          MyEndFunc
 
 //*****************************************************************************
 //
