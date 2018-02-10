@@ -141,8 +141,9 @@ void MyInitFunc(void)
 
 void MyStartFunc(void)
 {
-    lampmask = L_STAT1|L_STAT2;
+    lampmask = L_STAT1;
     U5_MCP23S17_write(MCP_GPIOB, lampmask);
+    lampmask = L_STAT2;
 }
 
 //*****************************************************************************
@@ -166,7 +167,7 @@ void MyStartFunc(void)
 
 void MyProgressFunc(uint32_t ulCompleted, uint32_t ulTotal)
 {
-    // Toggle status-1 led
+    // Toggle status-2 led
     lampmask ^= L_STAT2;
     U5_MCP23S17_write(MCP_GPIOB, lampmask);
 }
