@@ -8,6 +8,6 @@
 	<isElfFormat value="true"/>
 	<rts value="libc.a"/>
 	<createSlaveProjects value=""/>
-	<origin value="C:/Users/rtzau/boot_serial/ccs"/>
+	<origin value="C:/Users/bob/workspace_v7/DTC1200_boot_loader"/>
 	<isTargetManual value="true"/>
 </projectOptions>
