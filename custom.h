@@ -14,7 +14,7 @@
 
 /*** DTC-1200 Hardware Constants ***********************************************/
 
-#define HW_REV			3			/* 0=A, 1=B, 2=C, 3=D etc  */
+#define HW_REV			2			/* 0=A, 1=B, 2=C, 3=D etc  */
 
 #define DAC_MIN			0           /* zero scale DAC setting  */
 #define DAC_MAX			0x03FF      /* 10-bit full scale DAC   */

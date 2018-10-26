@@ -260,7 +260,7 @@
 #if (HW_REV >= 3)
 #define FORCED_UPDATE_PERIPH    SYSCTL_RCGCGPIO_R0		/* Port-A */
 #else
-#define FORCED_UPDATE_PERIPH    SYSCTL_RCGCGPIO_R2		/* Port-C */
+#define FORCED_UPDATE_PERIPH    SYSCTL_RCGCGPIO_R5		/* Port-F */
 #endif
 
 //*****************************************************************************
@@ -278,7 +278,7 @@
 #if (HW_REV >= 3)
 #define FORCED_UPDATE_PORT      GPIO_PORTA_BASE
 #else
-#define FORCED_UPDATE_PORT      GPIO_PORTC_BASE
+#define FORCED_UPDATE_PORT      GPIO_PORTF_BASE
 #endif
 
 
@@ -295,7 +295,7 @@
 #if (HW_REV >= 3)
 #define FORCED_UPDATE_PIN       4     // PA4
 #else
-#define FORCED_UPDATE_PIN       6     // PC6
+#define FORCED_UPDATE_PIN       3     // PF3
 #endif
 
 //*****************************************************************************
